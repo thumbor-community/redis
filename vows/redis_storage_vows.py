@@ -13,7 +13,7 @@ from pyvows import Vows, expect
 from tc_redis.storages.redis_storage import Storage as RedisStorage
 from thumbor.context import Context
 from thumbor.config import Config
-from fixtures.storage_fixture import IMAGE_URL, IMAGE_BYTES, get_server
+from fixtures.storage_fixtures import IMAGE_URL, IMAGE_BYTES, get_server
 
 
 class RedisDBContext(Vows.Context):
@@ -21,8 +21,7 @@ class RedisDBContext(Vows.Context):
         self.connection = redis.Redis(
             port=6379,
             host='localhost',
-            db=0,
-            password='hey_you'
+            db=0
         )
 
 
@@ -32,7 +31,6 @@ class RedisStorageVows(RedisDBContext):
         def topic(self):
             config = Config(
                 REDIS_STORAGE_SERVER_PORT=6379,
-                REDIS_STORAGE_SERVER_PASSWORD='hey_you'
             )
             storage = RedisStorage(Context(
                 config=config, server=get_server('ACME-SEC')
@@ -48,7 +46,6 @@ class RedisStorageVows(RedisDBContext):
         def topic(self):
             config = Config(
                 REDIS_STORAGE_SERVER_PORT=6379,
-                REDIS_STORAGE_SERVER_PASSWORD='hey_you'
             )
             storage = RedisStorage(Context(
                 config=config, server=get_server('ACME-SEC')
@@ -64,7 +61,6 @@ class RedisStorageVows(RedisDBContext):
         def topic(self):
             config = Config(
                 REDIS_STORAGE_SERVER_PORT=6379,
-                REDIS_STORAGE_SERVER_PASSWORD='hey_you'
             )
             storage = RedisStorage(Context(
                 config=config, server=get_server('ACME-SEC')
@@ -79,7 +75,6 @@ class RedisStorageVows(RedisDBContext):
         def topic(self):
             config = Config(
                 REDIS_STORAGE_SERVER_PORT=6379,
-                REDIS_STORAGE_SERVER_PASSWORD='hey_you'
             )
             storage = RedisStorage(Context(
                 config=config, server=get_server('ACME-SEC')
@@ -96,7 +91,6 @@ class RedisStorageVows(RedisDBContext):
             def topic(self):
                 config = Config(
                     REDIS_STORAGE_SERVER_PORT=6379,
-                    REDIS_STORAGE_SERVER_PASSWORD='hey_you'
                 )
                 storage = RedisStorage(Context(
                     config=config, server=get_server('ACME-SEC')
@@ -111,7 +105,6 @@ class RedisStorageVows(RedisDBContext):
         def topic(self):
             config = Config(
                 REDIS_STORAGE_SERVER_PORT=6379,
-                REDIS_STORAGE_SERVER_PASSWORD='hey_you'
             )
             storage = RedisStorage(Context(
                 config=config, server=get_server('ACME-SEC')
@@ -185,7 +178,6 @@ class RedisStorageVows(RedisDBContext):
             def topic(self):
                 config = Config(
                     REDIS_STORAGE_SERVER_PORT=6379,
-                    REDIS_STORAGE_SERVER_PASSWORD='hey_you',
                     STORES_CRYPTO_KEY_FOR_EACH_IMAGE=True
                 )
                 storage = RedisStorage(Context(
@@ -205,7 +197,6 @@ class RedisStorageVows(RedisDBContext):
             def topic(self):
                 config = Config(
                     REDIS_STORAGE_SERVER_PORT=6379,
-                    REDIS_STORAGE_SERVER_PASSWORD='hey_you',
                     STORES_CRYPTO_KEY_FOR_EACH_IMAGE=True
                 )
                 storage = RedisStorage(Context(
@@ -220,7 +211,6 @@ class RedisStorageVows(RedisDBContext):
             def topic(self):
                 config = Config(
                     REDIS_STORAGE_SERVER_PORT=6379,
-                    REDIS_STORAGE_SERVER_PASSWORD='hey_you'
                 )
                 storage = RedisStorage(Context(
                     config=config, server=get_server('ACME-SEC')
@@ -236,7 +226,6 @@ class RedisStorageVows(RedisDBContext):
             def topic(self):
                 config = Config(
                     REDIS_STORAGE_SERVER_PORT=6379,
-                    REDIS_STORAGE_SERVER_PASSWORD='hey_you',
                     STORES_CRYPTO_KEY_FOR_EACH_IMAGE=True
                 )
                 storage = RedisStorage(Context(
@@ -259,7 +248,6 @@ class RedisStorageVows(RedisDBContext):
             def topic(self):
                 config = Config(
                     REDIS_STORAGE_SERVER_PORT=6379,
-                    REDIS_STORAGE_SERVER_PASSWORD='hey_you'
                 )
                 storage = RedisStorage(Context(
                     config=config, server=get_server('ACME-SEC')
@@ -279,7 +267,6 @@ class RedisStorageVows(RedisDBContext):
             def topic(self):
                 config = Config(
                     REDIS_STORAGE_SERVER_PORT=6379,
-                    REDIS_STORAGE_SERVER_PASSWORD='hey_you'
                 )
                 storage = RedisStorage(Context(
                     config=config, server=get_server('ACME-SEC')
