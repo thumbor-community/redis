@@ -1,6 +1,12 @@
 import os
 from setuptools import setup
 
+try:
+    import pypandoc
+    long_description = pypandoc.convert('README.md', 'rst')
+except (IOError, ImportError):
+    long_description = 'Thumbor redis storage adapters'
+
 
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
@@ -16,7 +22,7 @@ setup(
     url="https://github.com/thumbor-community/redis",
     packages=['tc_redis'],
     package_dir={'tc_redis': 'tc_redis'},
-    long_description=read('README.md'),
+    long_description=long_description,
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'License :: OSI Approved :: MIT License',
