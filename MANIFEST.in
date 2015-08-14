@@ -1,0 +1,5 @@
+prune dist
+prune build
+include requirements.txt
+include README.md
+recursive-include tc_redis *.py
