@@ -1,5 +1,5 @@
 import os
-from setuptools import setup
+from setuptools import setup, find_packages
 
 try:
     import pypandoc
@@ -20,8 +20,7 @@ setup(
     license="MIT",
     keywords="thumbor redis",
     url="https://github.com/thumbor-community/redis",
-    packages=['tc_redis'],
-    package_dir={'tc_redis': 'tc_redis'},
+    packages=find_packages(),
     long_description=long_description,
     classifiers=[
         'Development Status :: 5 - Production/Stable',
