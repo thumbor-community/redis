@@ -45,7 +45,8 @@ class Storage(BaseStorage):
             port=self.context.config.REDIS_STORAGE_SERVER_PORT,
             host=self.context.config.REDIS_STORAGE_SERVER_HOST,
             db=self.context.config.REDIS_STORAGE_SERVER_DB,
-            password=self.context.config.REDIS_STORAGE_SERVER_PASSWORD
+            password=self.context.config.REDIS_STORAGE_SERVER_PASSWORD,
+            ssl=self.context.config.REDIS_STORAGE_SERVER_SSL
         )
 
         if self.shared_client:
