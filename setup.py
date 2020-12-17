@@ -14,7 +14,7 @@ def read(fname):
 
 setup(
     name="tc_redis",
-    version="1.0.1",
+    version="1.1.0",
     author="Thumbor Community",
     description=("Thumbor redis storage adapters"),
     license="MIT",
@@ -29,6 +29,6 @@ setup(
     ],
     install_requires=[
         'thumbor>=5.0.0',
-        'redis'
+        'redis>=3.5'
     ]
 )
