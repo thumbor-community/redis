@@ -1,0 +1,23 @@
+name: unittest
+on:
+  push:
+  pull_request:
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        python-version: ["2.7"]
+    name: Python ${{ matrix.python-version }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: x64
+      - name: Install apt dependencies
+        run: sudo apt install -y redis-server libcurl4-openssl-dev libssl-dev libjpeg-dev
+      - name: Install pip dependencies
+        run: pip install thumbor==6.7 redis==2.10.6 pyvows coverage
+      - run: pyvows -c -l tc_redis
