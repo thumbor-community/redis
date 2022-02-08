@@ -2,7 +2,6 @@
 
 
 class on_exception(object):  # NOQA
-
     def __init__(self, callback, exception_class=Exception):
         self.callback = callback
         self.exception_class = exception_class
@@ -17,16 +16,11 @@ class on_exception(object):  # NOQA
                     # Execute the callback and let it handle the exception
                     if self_instance:
                         return self.callback(
-                            self_instance,
-                            fn.__name__,
-                            self.exception_class,
-                            exc_value
+                            self_instance, fn.__name__, self.exception_class, exc_value
                         )
                     else:
                         return self.callback(
-                            fn.__name__,
-                            self.exception_class,
-                            exc_value
+                            fn.__name__, self.exception_class, exc_value
                         )
                 else:
                     raise

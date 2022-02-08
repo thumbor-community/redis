@@ -14,22 +14,22 @@ class Storage(BaseStorage):
     storage = None
 
     def __init__(self, context, shared_client=True):
-        '''Initialize the RedisStorage
+        """Initialize the RedisStorage
 
         :param thumbor.context.Context shared_client: Current context
         :param boolean shared_client: When set to True a singleton client will
                                       be used.
-        '''
+        """
 
         BaseStorage.__init__(self, context)
         self.shared_client = shared_client
         self.storage = self.reconnect_redis()
 
     def get_storage(self):
-        '''Get the storage instance.
+        """Get the storage instance.
 
         :return Redis: Redis instance
-        '''
+        """
 
         if self.storage:
             return self.storage
@@ -45,7 +45,7 @@ class Storage(BaseStorage):
             port=self.context.config.REDIS_STORAGE_SERVER_PORT,
             host=self.context.config.REDIS_STORAGE_SERVER_HOST,
             db=self.context.config.REDIS_STORAGE_SERVER_DB,
-            password=self.context.config.REDIS_STORAGE_SERVER_PASSWORD
+            password=self.context.config.REDIS_STORAGE_SERVER_PASSWORD,
         )
 
         if self.shared_client:
@@ -53,13 +53,13 @@ class Storage(BaseStorage):
         return storage
 
     def on_redis_error(self, fname, exc_type, exc_value):
-        '''Callback executed when there is a redis error.
+        """Callback executed when there is a redis error.
 
         :param string fname: Function name that was being called.
         :param type exc_type: Exception type
         :param Exception exc_value: The current exception
         :returns: Default value or raise the current exception
-        '''
+        """
 
         if self.shared_client:
             Storage.storage = None
@@ -68,26 +68,26 @@ class Storage(BaseStorage):
 
         if self.context.config.REDIS_STORAGE_IGNORE_ERRORS is True:
             logger.error("[REDIS_STORAGE] %s" % exc_value)
-            if fname == '_exists':
+            if fname == "_exists":
                 return False
             return None
         else:
             raise exc_value
 
     def __key_for(self, url):
-        return 'thumbor-crypto-%s' % url
+        return "thumbor-crypto-%s" % url
 
     def __detector_key_for(self, url):
-        return 'thumbor-detector-%s' % url
+        return "thumbor-detector-%s" % url
 
     @on_exception(on_redis_error, RedisError)
     def put(self, path, bytes):
         storage = self.get_storage()
         storage.set(path, bytes)
         storage.expireat(
-            path, datetime.now() + timedelta(
-                seconds=self.context.config.STORAGE_EXPIRATION_SECONDS
-            )
+            path,
+            datetime.now()
+            + timedelta(seconds=self.context.config.STORAGE_EXPIRATION_SECONDS),
         )
 
     @on_exception(on_redis_error, RedisError)

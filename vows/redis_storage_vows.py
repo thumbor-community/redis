@@ -18,11 +18,7 @@ from fixtures.storage_fixtures import IMAGE_URL, IMAGE_BYTES, get_server
 
 class RedisDBContext(Vows.Context):
     def setup(self):
-        self.connection = redis.Redis(
-            port=6379,
-            host='localhost',
-            db=0
-        )
+        self.connection = redis.Redis(port=6379, host="localhost", db=0)
 
 
 @Vows.batch
@@ -32,9 +28,9 @@ class RedisStorageVows(RedisDBContext):
             config = Config(
                 REDIS_STORAGE_SERVER_PORT=6379,
             )
-            storage = RedisStorage(Context(
-                config=config, server=get_server('ACME-SEC')
-            ))
+            storage = RedisStorage(
+                Context(config=config, server=get_server("ACME-SEC"))
+            )
             storage.put(IMAGE_URL % 1, IMAGE_BYTES)
             return self.parent.connection.get(IMAGE_URL % 1)
 
@@ -47,9 +43,9 @@ class RedisStorageVows(RedisDBContext):
             config = Config(
                 REDIS_STORAGE_SERVER_PORT=6379,
             )
-            storage = RedisStorage(Context(
-                config=config, server=get_server('ACME-SEC')
-            ))
+            storage = RedisStorage(
+                Context(config=config, server=get_server("ACME-SEC"))
+            )
             storage.put(IMAGE_URL % 9999, IMAGE_BYTES)
             return storage.exists(IMAGE_URL % 9999)
 
@@ -62,9 +58,9 @@ class RedisStorageVows(RedisDBContext):
             config = Config(
                 REDIS_STORAGE_SERVER_PORT=6379,
             )
-            storage = RedisStorage(Context(
-                config=config, server=get_server('ACME-SEC')
-            ))
+            storage = RedisStorage(
+                Context(config=config, server=get_server("ACME-SEC"))
+            )
             return storage.exists(IMAGE_URL % 10000)
 
         def should_not_exist(self, topic):
@@ -76,9 +72,9 @@ class RedisStorageVows(RedisDBContext):
             config = Config(
                 REDIS_STORAGE_SERVER_PORT=6379,
             )
-            storage = RedisStorage(Context(
-                config=config, server=get_server('ACME-SEC')
-            ))
+            storage = RedisStorage(
+                Context(config=config, server=get_server("ACME-SEC"))
+            )
             storage.put(IMAGE_URL % 10001, IMAGE_BYTES)
             storage.remove(IMAGE_URL % 10001)
             return self.parent.connection.get(IMAGE_URL % 10001)
@@ -92,9 +88,9 @@ class RedisStorageVows(RedisDBContext):
                 config = Config(
                     REDIS_STORAGE_SERVER_PORT=6379,
                 )
-                storage = RedisStorage(Context(
-                    config=config, server=get_server('ACME-SEC')
-                ))
+                storage = RedisStorage(
+                    Context(config=config, server=get_server("ACME-SEC"))
+                )
                 return storage.remove(IMAGE_URL % 10001)
 
             def should_not_be_in_catalog(self, topic):
@@ -106,9 +102,9 @@ class RedisStorageVows(RedisDBContext):
             config = Config(
                 REDIS_STORAGE_SERVER_PORT=6379,
             )
-            storage = RedisStorage(Context(
-                config=config, server=get_server('ACME-SEC')
-            ))
+            storage = RedisStorage(
+                Context(config=config, server=get_server("ACME-SEC"))
+            )
 
             storage.put(IMAGE_URL % 2, IMAGE_BYTES)
             return storage.get(IMAGE_URL % 2)
@@ -126,37 +122,29 @@ class RedisStorageVows(RedisDBContext):
             def topic(self):
                 config = Config(
                     REDIS_STORAGE_SERVER_PORT=300,
-                    REDIS_STORAGE_SERVER_PASSWORD='nope',
-                    REDIS_STORAGE_IGNORE_ERRORS=False
+                    REDIS_STORAGE_SERVER_PASSWORD="nope",
+                    REDIS_STORAGE_IGNORE_ERRORS=False,
                 )
                 storage = RedisStorage(
-                    context=Context(
-                        config=config,
-                        server=get_server('ACME-SEC')
-                    ),
-                    shared_client=False
+                    context=Context(config=config, server=get_server("ACME-SEC")),
+                    shared_client=False,
                 )
 
                 return storage.exists(IMAGE_URL % 2)
 
             def should_throw_an_exception(self, topic):
-                expect(
-                    topic
-                ).to_be_an_error_like(redis.RedisError)
+                expect(topic).to_be_an_error_like(redis.RedisError)
 
         class IgnoreErrors(Vows.Context):
             def topic(self):
                 config = Config(
                     REDIS_STORAGE_SERVER_PORT=300,
-                    REDIS_STORAGE_SERVER_PASSWORD='nope',
-                    REDIS_STORAGE_IGNORE_ERRORS=True
+                    REDIS_STORAGE_SERVER_PASSWORD="nope",
+                    REDIS_STORAGE_IGNORE_ERRORS=True,
                 )
                 storage = RedisStorage(
-                    context=Context(
-                        config=config,
-                        server=get_server('ACME-SEC')
-                    ),
-                    shared_client=False
+                    context=Context(config=config, server=get_server("ACME-SEC")),
+                    shared_client=False,
                 )
 
                 return storage
@@ -173,16 +161,13 @@ class RedisStorageVows(RedisDBContext):
 
     class CryptoVows(Vows.Context):
         class RaisesIfInvalidConfig(Vows.Context):
-
             @Vows.capture_error
             def topic(self):
                 config = Config(
                     REDIS_STORAGE_SERVER_PORT=6379,
-                    STORES_CRYPTO_KEY_FOR_EACH_IMAGE=True
+                    STORES_CRYPTO_KEY_FOR_EACH_IMAGE=True,
                 )
-                storage = RedisStorage(Context(
-                    config=config, server=get_server('')
-                ))
+                storage = RedisStorage(Context(config=config, server=get_server("")))
                 storage.put(IMAGE_URL % 3, IMAGE_BYTES)
                 storage.put_crypto(IMAGE_URL % 3)
 
@@ -197,11 +182,11 @@ class RedisStorageVows(RedisDBContext):
             def topic(self):
                 config = Config(
                     REDIS_STORAGE_SERVER_PORT=6379,
-                    STORES_CRYPTO_KEY_FOR_EACH_IMAGE=True
+                    STORES_CRYPTO_KEY_FOR_EACH_IMAGE=True,
                 )
-                storage = RedisStorage(Context(
-                    config=config, server=get_server('ACME-SEC')
-                ))
+                storage = RedisStorage(
+                    Context(config=config, server=get_server("ACME-SEC"))
+                )
                 return storage.get_crypto(IMAGE_URL % 9999)
 
             def should_be_null(self, topic):
@@ -212,9 +197,9 @@ class RedisStorageVows(RedisDBContext):
                 config = Config(
                     REDIS_STORAGE_SERVER_PORT=6379,
                 )
-                storage = RedisStorage(Context(
-                    config=config, server=get_server('ACME-SEC')
-                ))
+                storage = RedisStorage(
+                    Context(config=config, server=get_server("ACME-SEC"))
+                )
                 storage.put(IMAGE_URL % 5, IMAGE_BYTES)
                 storage.put_crypto(IMAGE_URL % 5)
                 return storage.get_crypto(IMAGE_URL % 5)
@@ -226,11 +211,11 @@ class RedisStorageVows(RedisDBContext):
             def topic(self):
                 config = Config(
                     REDIS_STORAGE_SERVER_PORT=6379,
-                    STORES_CRYPTO_KEY_FOR_EACH_IMAGE=True
+                    STORES_CRYPTO_KEY_FOR_EACH_IMAGE=True,
                 )
-                storage = RedisStorage(Context(
-                    config=config, server=get_server('ACME-SEC')
-                ))
+                storage = RedisStorage(
+                    Context(config=config, server=get_server("ACME-SEC"))
+                )
 
                 storage.put(IMAGE_URL % 6, IMAGE_BYTES)
                 storage.put_crypto(IMAGE_URL % 6)
@@ -241,7 +226,7 @@ class RedisStorageVows(RedisDBContext):
                 expect(topic.exception()).not_to_be_an_error()
 
             def should_have_proper_key(self, topic):
-                expect(topic.result()).to_equal('ACME-SEC')
+                expect(topic.result()).to_equal("ACME-SEC")
 
     class DetectorVows(Vows.Context):
         class CanStoreDetectorData(Vows.Context):
@@ -249,11 +234,11 @@ class RedisStorageVows(RedisDBContext):
                 config = Config(
                     REDIS_STORAGE_SERVER_PORT=6379,
                 )
-                storage = RedisStorage(Context(
-                    config=config, server=get_server('ACME-SEC')
-                ))
+                storage = RedisStorage(
+                    Context(config=config, server=get_server("ACME-SEC"))
+                )
                 storage.put(IMAGE_URL % 7, IMAGE_BYTES)
-                storage.put_detector_data(IMAGE_URL % 7, 'some-data')
+                storage.put_detector_data(IMAGE_URL % 7, "some-data")
                 return storage.get_detector_data(IMAGE_URL % 7)
 
             def should_not_be_null(self, topic):
@@ -261,16 +246,16 @@ class RedisStorageVows(RedisDBContext):
                 expect(topic.exception()).not_to_be_an_error()
 
             def should_equal_some_data(self, topic):
-                expect(topic.result()).to_equal('some-data')
+                expect(topic.result()).to_equal("some-data")
 
         class ReturnsNoneIfNoDetectorData(Vows.Context):
             def topic(self):
                 config = Config(
                     REDIS_STORAGE_SERVER_PORT=6379,
                 )
-                storage = RedisStorage(Context(
-                    config=config, server=get_server('ACME-SEC')
-                ))
+                storage = RedisStorage(
+                    Context(config=config, server=get_server("ACME-SEC"))
+                )
                 return storage.get_detector_data(IMAGE_URL % 10000)
 
             def should_not_be_null(self, topic):
