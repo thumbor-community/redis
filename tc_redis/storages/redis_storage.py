@@ -4,7 +4,6 @@ import json
 from datetime import datetime, timedelta
 from redis import Redis, RedisError
 from tc_redis.utils import on_exception
-from tornado.concurrent import return_future
 from thumbor.storages import BaseStorage
 from thumbor.utils import logger
 
@@ -41,12 +40,19 @@ class Storage(BaseStorage):
         if self.shared_client and Storage.storage:
             return Storage.storage
 
-        storage = Redis(
-            port=self.context.config.REDIS_STORAGE_SERVER_PORT,
-            host=self.context.config.REDIS_STORAGE_SERVER_HOST,
-            db=self.context.config.REDIS_STORAGE_SERVER_DB,
-            password=self.context.config.REDIS_STORAGE_SERVER_PASSWORD,
-        )
+        if self.context.config.REDIS_STORAGE_SERVER_PASSWORD is None:
+            storage = Redis(
+                port=self.context.config.REDIS_STORAGE_SERVER_PORT,
+                host=self.context.config.REDIS_STORAGE_SERVER_HOST,
+                db=self.context.config.REDIS_STORAGE_SERVER_DB,
+            )
+        else:
+            storage = Redis(
+                port=self.context.config.REDIS_STORAGE_SERVER_PORT,
+                host=self.context.config.REDIS_STORAGE_SERVER_HOST,
+                db=self.context.config.REDIS_STORAGE_SERVER_DB,
+                password=self.context.config.REDIS_STORAGE_SERVER_PASSWORD,
+            )
 
         if self.shared_client:
             Storage.storage = storage
@@ -67,7 +73,7 @@ class Storage(BaseStorage):
             self.storage = None
 
         if self.context.config.REDIS_STORAGE_IGNORE_ERRORS is True:
-            logger.error("[REDIS_STORAGE] %s" % exc_value)
+            logger.error(f"[REDIS_STORAGE] {exc_value}")
             if fname == "_exists":
                 return False
             return None
@@ -75,15 +81,15 @@ class Storage(BaseStorage):
             raise exc_value
 
     def __key_for(self, url):
-        return "thumbor-crypto-%s" % url
+        return f"thumbor-crypto-{url}"
 
     def __detector_key_for(self, url):
-        return "thumbor-detector-%s" % url
+        return f"thumbor-detector-{url}"
 
     @on_exception(on_redis_error, RedisError)
-    def put(self, path, bytes):
+    async def put(self, path, image_bytes):
         storage = self.get_storage()
-        storage.set(path, bytes)
+        storage.set(path, image_bytes)
         storage.expireat(
             path,
             datetime.now()
@@ -91,7 +97,7 @@ class Storage(BaseStorage):
         )
 
     @on_exception(on_redis_error, RedisError)
-    def put_crypto(self, path):
+    async def put_crypto(self, path):
         if not self.context.config.STORES_CRYPTO_KEY_FOR_EACH_IMAGE:
             return
 
@@ -105,13 +111,12 @@ class Storage(BaseStorage):
         self.get_storage().set(key, self.context.server.security_key)
 
     @on_exception(on_redis_error, RedisError)
-    def put_detector_data(self, path, data):
+    async def put_detector_data(self, path, data):
         key = self.__detector_key_for(path)
         self.get_storage().set(key, json.dumps(data))
 
-    @return_future
-    def get_crypto(self, path, callback):
-        callback(self._get_crypto(path))
+    async def get_crypto(self, path):
+        return self._get_crypto(path)
 
     @on_exception(on_redis_error, RedisError)
     def _get_crypto(self, path):
@@ -124,9 +129,8 @@ class Storage(BaseStorage):
             return None
         return crypto
 
-    @return_future
-    def get_detector_data(self, path, callback):
-        callback(self._get_detector_data(path))
+    async def get_detector_data(self, path):
+        return self._get_detector_data(path)
 
     @on_exception(on_redis_error, RedisError)
     def _get_detector_data(self, path):
@@ -136,22 +140,20 @@ class Storage(BaseStorage):
             return None
         return json.loads(data)
 
-    @return_future
-    def exists(self, path, callback):
-        callback(self._exists(path))
+    async def exists(self, path):
+        return self._exists(path)
 
     @on_exception(on_redis_error, RedisError)
     def _exists(self, path):
         return self.get_storage().exists(path)
 
     @on_exception(on_redis_error, RedisError)
-    def remove(self, path):
+    async def remove(self, path):
         self.get_storage().delete(path)
 
-    @return_future
-    def get(self, path, callback):
+    async def get(self, path):
         @on_exception(self.on_redis_error, RedisError)
         def wrap():
             return self.get_storage().get(path)
 
-        callback(wrap())
+        return wrap()

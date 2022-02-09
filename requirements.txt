@@ -1,2 +1,0 @@
-redis
-thumbor>=5.0.0

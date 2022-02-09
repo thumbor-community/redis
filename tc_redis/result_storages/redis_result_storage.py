@@ -58,12 +58,19 @@ class Storage(BaseStorage):
         if self.shared_client and Storage.storage:
             return Storage.storage
 
-        storage = Redis(
-            port=self.context.config.REDIS_RESULT_STORAGE_SERVER_PORT,
-            host=self.context.config.REDIS_RESULT_STORAGE_SERVER_HOST,
-            db=self.context.config.REDIS_RESULT_STORAGE_SERVER_DB,
-            password=self.context.config.REDIS_RESULT_STORAGE_SERVER_PASSWORD,
-        )
+        if self.context.config.REDIS_RESULT_STORAGE_SERVER_PASSWORD is None:
+            storage = Redis(
+                port=self.context.config.REDIS_RESULT_STORAGE_SERVER_PORT,
+                host=self.context.config.REDIS_RESULT_STORAGE_SERVER_HOST,
+                db=self.context.config.REDIS_RESULT_STORAGE_SERVER_DB,
+            )
+        else:
+            storage = Redis(
+                port=self.context.config.REDIS_RESULT_STORAGE_SERVER_PORT,
+                host=self.context.config.REDIS_RESULT_STORAGE_SERVER_HOST,
+                db=self.context.config.REDIS_RESULT_STORAGE_SERVER_DB,
+                password=self.context.config.REDIS_RESULT_STORAGE_SERVER_PASSWORD,
+            )
 
         if self.shared_client:
             Storage.storage = storage
@@ -84,7 +91,7 @@ class Storage(BaseStorage):
             self.storage = None
 
         if self.context.config.REDIS_RESULT_STORAGE_IGNORE_ERRORS is True:
-            logger.error("Redis result storage failure: %s" % exc_value)
+            logger.error(f"Redis result storage failure: {exc_value}")
 
             return None
         else:
@@ -109,7 +116,7 @@ class Storage(BaseStorage):
         :rettype: string
         """
 
-        path = "result:%s" % self.context.request.url
+        path = f"result:{self.context.request.url}"
 
         if self.is_auto_webp():
             path += "/webp"
@@ -130,7 +137,7 @@ class Storage(BaseStorage):
         return default_ttl
 
     @on_exception(on_redis_error, RedisError)
-    def put(self, bytes):
+    async def put(self, bytes):
         """Save to redis
 
         :param bytes: Bytes to write to the storage.
@@ -156,7 +163,7 @@ class Storage(BaseStorage):
         return key
 
     @on_exception(on_redis_error, RedisError)
-    def get(self):
+    async def get(self):
         """Get the item from redis."""
 
         key = self.get_key_from_request()

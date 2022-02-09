@@ -11,7 +11,7 @@ SAME_IMAGE_URL = "s.glbimg.com/some_other/image_%d.jpg"
 IMAGE_URL = "s.glbimg.com/some/image_%d.jpg"
 IMAGE_PATH = join(abspath(dirname(__file__)), "image.jpg")
 
-with open(IMAGE_PATH, "r") as img:
+with open(IMAGE_PATH, "rb") as img:
     IMAGE_BYTES = img.read()
 
 
