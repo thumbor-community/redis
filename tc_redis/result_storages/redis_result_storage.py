@@ -162,14 +162,17 @@ class Storage(BaseStorage):
 
         return key
 
-    @on_exception(on_redis_error, RedisError)
     async def get(self):
         """Get the item from redis."""
 
-        key = self.get_key_from_request()
-        result = self.get_storage().get(key)
+        @on_exception(self.on_redis_error, RedisError)
+        def wrap():
+            key = self.get_key_from_request()
+            result = self.get_storage().get(key)
 
-        return result if result else None
+            return result if result else None
+
+        return wrap()
 
     @on_exception(on_redis_error, RedisError)
     def last_updated(self):
