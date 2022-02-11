@@ -41,7 +41,6 @@ class RedisDBContext(IsolatedAsyncioTestCase):
         self.storage = RedisStorage(self.ctx)
 
 
-
 class CanStoreImage(RedisDBContext):
     def setUp(self):
         super().setUp()

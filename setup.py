@@ -25,6 +25,7 @@ TESTS_REQUIREMENTS = [
 RUNTIME_REQUIREMENTS = [
     "redis==4.*,>=4.1.3",
     "thumbor==7.*,>=7.0.6",
+    "pre-commit==2.*,>=2.17.0",
 ]
 
 setup(
