@@ -30,7 +30,7 @@ RUNTIME_REQUIREMENTS = [
 
 setup(
     name="tc_redis",
-    version="1.0.1",
+    version="2.0.0",
     author="Thumbor Community",
     description=("Thumbor redis storage adapters"),
     license="MIT",
