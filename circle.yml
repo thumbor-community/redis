@@ -1,7 +1,0 @@
-dependencies:
-  override:
-    - pip install pyvows coverage tornado_pyvows thumbor redis
-
-test:
-  override:
-    - pyvows -c -l tc_redis
