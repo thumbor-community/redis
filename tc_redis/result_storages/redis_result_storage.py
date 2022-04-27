@@ -6,19 +6,21 @@
 
 import time
 from datetime import datetime, timedelta
-from redis import Redis, RedisError
-from tc_redis.utils import on_exception
+
+from redis import RedisError
 from thumbor.result_storages import BaseStorage
 from thumbor.utils import logger
 
+from tc_redis.base_storage import RedisBaseStorage
+from tc_redis.utils import on_exception
 
-class Storage(BaseStorage):
 
-    storage = None
+class Storage(BaseStorage, RedisBaseStorage):
 
     """start_time is used to calculate the last modified value when an item
     has no expiration date.
     """
+
     start_time = None
 
     def __init__(self, context, shared_client=True):
@@ -30,51 +32,12 @@ class Storage(BaseStorage):
         """
 
         BaseStorage.__init__(self, context)
+        RedisBaseStorage.__init__(self, context, "result_storage")
         self.shared_client = shared_client
-        self.storage = self.reconnect_redis()
+        self.storage = self.get_storage()
 
         if not Storage.start_time:
             Storage.start_time = time.time()
-
-    def get_storage(self):
-        """Get the storage instance.
-
-        :return Redis: Redis instance
-        """
-
-        if self.storage:
-            return self.storage
-        self.storage = self.reconnect_redis()
-
-        return self.storage
-
-    def reconnect_redis(self):
-        """Reconnect to redis.
-
-        :return: Redis client instance
-        :rettype: redis.Redis
-        """
-
-        if self.shared_client and Storage.storage:
-            return Storage.storage
-
-        if self.context.config.REDIS_RESULT_STORAGE_SERVER_PASSWORD is None:
-            storage = Redis(
-                port=self.context.config.REDIS_RESULT_STORAGE_SERVER_PORT,
-                host=self.context.config.REDIS_RESULT_STORAGE_SERVER_HOST,
-                db=self.context.config.REDIS_RESULT_STORAGE_SERVER_DB,
-            )
-        else:
-            storage = Redis(
-                port=self.context.config.REDIS_RESULT_STORAGE_SERVER_PORT,
-                host=self.context.config.REDIS_RESULT_STORAGE_SERVER_HOST,
-                db=self.context.config.REDIS_RESULT_STORAGE_SERVER_DB,
-                password=self.context.config.REDIS_RESULT_STORAGE_SERVER_PASSWORD,
-            )
-
-        if self.shared_client:
-            Storage.storage = storage
-        return storage
 
     def on_redis_error(self, fname, exc_type, exc_value):
         """Callback executed when there is a redis error.
@@ -85,10 +48,8 @@ class Storage(BaseStorage):
         :returns: Default value or raise the current exception
         """
 
-        if self.shared_client:
-            Storage.storage = None
-        else:
-            self.storage = None
+        self.storage = None
+        self.set_shared_storage(None)
 
         if self.context.config.REDIS_RESULT_STORAGE_IGNORE_ERRORS is True:
             logger.error(f"Redis result storage failure: {exc_value}")

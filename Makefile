@@ -1,4 +1,4 @@
-REDIS_CONTAINER := redis-test
+REDIS_CONTAINER := redis-test redis-sentinel-test
 
 test: run-redis unit stop-redis
 
