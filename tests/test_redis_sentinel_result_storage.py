@@ -23,12 +23,20 @@ from tests.fixtures.storage_fixtures import IMAGE_URL, IMAGE_BYTES, get_server
 
 class RedisDBContext(IsolatedAsyncioTestCase):
     def setUp(self):
-        self.connection = redis.Redis(port=6379, host="localhost", db=0)
+        self.sentinel = redis.Sentinel(
+            [("localhost", 26380)],
+            socket_timeout=1,
+            sentinel_kwargs={"password": "superpassword"},
+        )
+        self.connection = self.sentinel.master_for(
+            "masterinstance", socket_timeout=1, password="superpassword"
+        )
         self.cfg = Config(
-            REDIS_RESULT_STORAGE_SERVER_HOST="localhost",
-            REDIS_RESULT_STORAGE_SERVER_PORT=6379,
-            REDIS_RESULT_STORAGE_SERVER_DB=0,
-            REDIS_RESULT_STORAGE_SERVER_PASSWORD="",
+            REDIS_SENTINEL_RESULT_STORAGE_INSTANCES="localhost:26380",
+            REDIS_SENTINEL_RESULT_STORAGE_MASTER_INSTANCE="masterinstance",
+            REDIS_SENTINEL_RESULT_STORAGE_MASTER_PASSWORD="superpassword",
+            REDIS_SENTINEL_RESULT_STORAGE_PASSWORD="superpassword",
+            REDIS_RESULT_STORAGE_MODE="sentinel",
             RESULT_STORAGE_EXPIRATION_SECONDS=60000,
         )
         self.ctx = Context(
@@ -42,7 +50,7 @@ class RedisDBContext(IsolatedAsyncioTestCase):
 
     def test_should_be_instance_of_single_node(self):
         expect(str(self.storage.get_storage())).to_equal(
-            "Redis<ConnectionPool<Connection<host=localhost,port=6379,db=0>>>"
+            "Redis<SentinelConnectionPool<service=masterinstance(master)>"
         )
 
 
@@ -167,10 +175,11 @@ class CanRaiseErrors(RedisDBContext):
     @pytest.mark.asyncio
     async def test_should_throw_an_exception(self):
         config = Config(
-            REDIS_RESULT_STORAGE_SERVER_HOST="localhost",
-            REDIS_RESULT_STORAGE_SERVER_PORT=300,
-            REDIS_RESULT_STORAGE_SERVER_DB=0,
-            REDIS_RESULT_STORAGE_SERVER_PASSWORD="nope",
+            REDIS_SENTINEL_RESULT_STORAGE_INSTANCES="localhost:300",
+            REDIS_SENTINEL_RESULT_STORAGE_MASTER_INSTANCE="masterinstance",
+            REDIS_SENTINEL_RESULT_STORAGE_MASTER_PASSWORD="superpassword",
+            REDIS_SENTINEL_RESULT_STORAGE_PASSWORD="superpassword",
+            REDIS_RESULT_STORAGE_MODE="sentinel",
             REDIS_RESULT_STORAGE_IGNORE_ERRORS=False,
         )
         ctx = Context(
@@ -196,10 +205,11 @@ class CanIgnoreErrors(RedisDBContext):
     @pytest.mark.asyncio
     async def test_should_not_throw_an_exception(self):
         cfg = Config(
-            REDIS_RESULT_STORAGE_SERVER_HOST="localhost",
-            REDIS_RESULT_STORAGE_SERVER_PORT=300,
-            REDIS_RESULT_STORAGE_SERVER_DB=0,
-            REDIS_RESULT_STORAGE_SERVER_PASSWORD="nope",
+            REDIS_SENTINEL_RESULT_STORAGE_INSTANCES="localhost:300",
+            REDIS_SENTINEL_RESULT_STORAGE_MASTER_INSTANCE="masterinstance",
+            REDIS_SENTINEL_RESULT_STORAGE_MASTER_PASSWORD="superpassword",
+            REDIS_SENTINEL_RESULT_STORAGE_PASSWORD="superpassword",
+            REDIS_RESULT_STORAGE_MODE="sentinel",
             REDIS_RESULT_STORAGE_IGNORE_ERRORS=True,
         )
         ctx = Context(
@@ -223,11 +233,16 @@ class ConnectToRedisWithoutPassword(RedisDBContext):
     def setUp(self):
         super().setUp()
 
+        self.sentinel = redis.Sentinel([("localhost", 26379)], socket_timeout=1)
+        self.connection = self.sentinel.master_for("masterinstance", socket_timeout=1)
+
         self.cfg = Config(
-            REDIS_RESULT_STORAGE_SERVER_HOST="localhost",
-            REDIS_RESULT_STORAGE_SERVER_PORT=6379,
-            REDIS_RESULT_STORAGE_SERVER_DB=0,
+            REDIS_SENTINEL_RESULT_STORAGE_INSTANCES="localhost:26379",
+            REDIS_SENTINEL_RESULT_STORAGE_MASTER_INSTANCE="masterinstance",
+            REDIS_SENTINEL_RESULT_STORAGE_MASTER_PASSWORD="superpassword",
+            REDIS_RESULT_STORAGE_MODE="sentinel",
         )
+
         self.ctx = Context(
             config=self.cfg,
             server=get_server("ACME-SEC"),
@@ -252,17 +267,14 @@ class RedisModeInvalid(RedisDBContext):
         super().setUp()
 
         self.cfg = Config(
-            REDIS_RESULT_STORAGE_SERVER_HOST="localhost",
-            REDIS_RESULT_STORAGE_SERVER_PORT=6379,
-            REDIS_RESULT_STORAGE_SERVER_DB=0,
+            REDIS_SENTINEL_RESULT_STORAGE_SERVER_HOST="localhost",
+            REDIS_SENTINEL_RESULT_STORAGE_SERVER_PORT=6379,
+            REDIS_SENTINEL_RESULT_STORAGE_SERVER_DB=0,
             REDIS_RESULT_STORAGE_MODE="test",
         )
         self.ctx = Context(
             config=self.cfg,
             server=get_server("ACME-SEC"),
-        )
-        self.ctx.request = RequestParameters(
-            url=IMAGE_URL % 2,
         )
 
     @pytest.mark.asyncio
