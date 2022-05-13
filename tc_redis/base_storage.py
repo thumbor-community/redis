@@ -31,6 +31,9 @@ class RedisBaseStorage:
                 "master_instance": self.context.config.get(
                     "REDIS_SENTINEL_STORAGE_MASTER_INSTANCE"
                 ),
+                "master_db": self.context.config.get(
+                    "REDIS_SENTINEL_STORAGE_MASTER_DB", 0
+                ),
                 "master_password": self.context.config.get(
                     "REDIS_SENTINEL_STORAGE_MASTER_PASSWORD"
                 ),
@@ -54,6 +57,9 @@ class RedisBaseStorage:
                 ),
                 "master_instance": self.context.config.get(
                     "REDIS_SENTINEL_RESULT_STORAGE_MASTER_INSTANCE"
+                ),
+                "master_db": self.context.config.get(
+                    "REDIS_SENTINEL_RESULT_STORAGE_MASTER_DB", 0
                 ),
                 "master_password": self.context.config.get(
                     "REDIS_SENTINEL_RESULT_STORAGE_MASTER_PASSWORD"
@@ -110,6 +116,7 @@ class RedisBaseStorage:
             self.storage_values[self.storage_type]["master_instance"],
             socket_timeout=self.storage_values[self.storage_type]["socket_timeout"],
             password=self.storage_values[self.storage_type]["master_password"],
+            db=self.storage_values[self.storage_type]["master_db"],
         )
 
     def connect_redis_single_node(self):
