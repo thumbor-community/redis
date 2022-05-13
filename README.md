@@ -1,7 +1,5 @@
 # Redis storage adapters
 
-[![Circle CI](https://circleci.com/gh/thumbor-community/redis.svg?style=svg)](https://circleci.com/gh/thumbor-community/redis)
-
 Thumbor redis storage adapters.
 
 ## Installation
