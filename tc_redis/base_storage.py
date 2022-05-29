@@ -6,14 +6,18 @@
 # Copyright (c) 2022 Raphael Rossi <raphael.vieira.rossi@gmail.com>
 
 from redis import Redis, Sentinel
+from redis.cluster import RedisCluster
+from redis.cluster import ClusterNode
 
 SINGLE_NODE = "single_node"
+CLUSTER = "cluster"
 SENTINEL = "sentinel"
 
 
 class RedisBaseStorage:
 
     single_node_storage = None
+    cluster_storage = None
     sentinel_storage = None
 
     def __init__(self, context, storage_type):
@@ -21,12 +25,14 @@ class RedisBaseStorage:
         self.context = context
         self.storage_type = storage_type
 
+        is_cluster = self.context.config.get("REDIS_STORAGE_MODE") == CLUSTER
+
         self.storage_values = {
             "storage": {
                 "db": self.context.config.get("REDIS_STORAGE_SERVER_DB"),
                 "host": self.context.config.get("REDIS_STORAGE_SERVER_HOST"),
                 "instances": self.context.config.get(
-                    "REDIS_SENTINEL_STORAGE_INSTANCES"
+                    "REDIS_CLUSTER_STORAGE_STARTUP_INSTANCES" if is_cluster else "REDIS_SENTINEL_STORAGE_INSTANCES"
                 ),
                 "master_instance": self.context.config.get(
                     "REDIS_SENTINEL_STORAGE_MASTER_INSTANCE"
@@ -53,7 +59,7 @@ class RedisBaseStorage:
                 "db": self.context.config.get("REDIS_RESULT_STORAGE_SERVER_DB"),
                 "host": self.context.config.get("REDIS_RESULT_STORAGE_SERVER_HOST"),
                 "instances": self.context.config.get(
-                    "REDIS_SENTINEL_RESULT_STORAGE_INSTANCES"
+                    "REDIS_CLUSTER_RESULT_STORAGE_STARTUP_INSTANCES" if is_cluster else "REDIS_SENTINEL_RESULT_STORAGE_INSTANCES"
                 ),
                 "master_instance": self.context.config.get(
                     "REDIS_SENTINEL_RESULT_STORAGE_MASTER_INSTANCE"
@@ -134,6 +140,20 @@ class RedisBaseStorage:
             password=self.storage_values[self.storage_type]["password"],
         )
 
+    def connect_redis_cluster(self):
+        instances_split = [tuple(instance.strip().split(":")) for instance in self.storage_values[self.storage_type]["instances"].split(",")]
+        instances = list(map(lambda x: ClusterNode(x[0], int(x[1] if len(x) == 2 else 6379)), instances_split))
+
+        if self.storage_values[self.storage_type]["password"] is None:
+            return RedisCluster(
+                startup_nodes=instances,
+            )
+
+        return RedisCluster(
+            startup_nodes=instances,
+            password=self.storage_values[self.storage_type]["password"],
+        )
+
     def reconnect_redis(self):
         shared_client = self.get_shared_storage()
         if shared_client:
@@ -148,6 +168,8 @@ class RedisBaseStorage:
         redis_mode = self.storage_values[self.storage_type]["mode"]
         if redis_mode == SINGLE_NODE:
             return self.connect_redis_single_node()
+        if redis_mode == CLUSTER:
+            return self.connect_redis_cluster()
         if redis_mode == SENTINEL:
             return self.connect_redis_sentinel()
 
@@ -172,6 +194,9 @@ class RedisBaseStorage:
         if redis_mode == SINGLE_NODE and RedisBaseStorage.single_node_storage:
             return RedisBaseStorage.single_node_storage
 
+        if redis_mode == CLUSTER and RedisBaseStorage.cluster_storage:
+            return RedisBaseStorage.cluster_storage
+
         return None
 
     def set_shared_storage(self, storage):
@@ -185,5 +210,8 @@ class RedisBaseStorage:
 
         if redis_mode == SINGLE_NODE:
             RedisBaseStorage.single_node_storage = storage
+
+        if redis_mode == CLUSTER:
+            RedisBaseStorage.cluster_storage = storage
 
         return None
