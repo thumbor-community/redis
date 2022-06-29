@@ -12,6 +12,7 @@ from socket import getnameinfo
 from unittest import IsolatedAsyncioTestCase
 
 import redis
+from redis.cluster import RedisCluster, ClusterNode
 import pytest
 from preggy import expect
 from thumbor.context import Context
@@ -24,20 +25,20 @@ from tests.fixtures.storage_fixtures import IMAGE_URL, IMAGE_BYTES, get_server
 
 class RedisDBContext(IsolatedAsyncioTestCase):
     def setUp(self):
-        self.connection = redis.Redis(port=6379, host="localhost", db=0)
+        self.connection = RedisCluster(
+            startup_nodes=list([ClusterNode("localhost", x) for x in range(6390, 6393)])
+        )
         self.cfg = Config(
-            REDIS_STORAGE_SERVER_HOST="localhost",
-            REDIS_STORAGE_SERVER_PORT=6379,
-            REDIS_STORAGE_SERVER_DB=0,
-            REDIS_STORAGE_SERVER_PASSWORD="",
+            REDIS_CLUSTER_STORAGE_STARTUP_INSTANCES="localhost:6390,localhost:6391,localhost:6392",
+            REDIS_STORAGE_MODE="cluster",
         )
         self.storage = RedisStorage(
             Context(config=self.cfg, server=get_server("ACME-SEC"))
         )
 
-    def test_should_be_instance_of_single_node(self):
-        expect(str(self.storage.get_storage())).to_equal(
-            "Redis<ConnectionPool<Connection<host=localhost,port=6379,db=0>>>"
+    def test_should_be_instance_of_cluster(self):
+        expect(str(self.storage.get_storage().get_nodes())).to_equal(
+            "[[host=127.0.0.1,port=6390,name=127.0.0.1:6390,server_type=primary,redis_connection=Redis<ConnectionPool<Connection<host=127.0.0.1,port=6390,db=0>>>], [host=127.0.0.1,port=6391,name=127.0.0.1:6391,server_type=primary,redis_connection=Redis<ConnectionPool<Connection<host=127.0.0.1,port=6391,db=0>>>], [host=127.0.0.1,port=6392,name=127.0.0.1:6392,server_type=primary,redis_connection=Redis<ConnectionPool<Connection<host=127.0.0.1,port=6392,db=0>>>]]"
         )
 
 
@@ -106,22 +107,22 @@ class CanGetImage(RedisDBContext):
 
 
 class CanRaiseErrors(RedisDBContext):
-    @pytest.mark.asyncio
-    async def test_should_throw_an_exception(self):
-        config = Config(
-            REDIS_STORAGE_SERVER_HOST="localhost",
-            REDIS_STORAGE_SERVER_PORT=300,
-            REDIS_STORAGE_SERVER_DB=0,
-            REDIS_STORAGE_SERVER_PASSWORD="nope",
+    def setUp(self):
+        super().setUp()
+        self.cfg = Config(
+            REDIS_CLUSTER_STORAGE_STARTUP_INSTANCES="localhost:6390,localhost:6391,localhost:6392",
+            REDIS_STORAGE_MODE="cluster",
             REDIS_STORAGE_IGNORE_ERRORS=False,
         )
-        storage = RedisStorage(
-            context=Context(config=config, server=get_server("ACME-SEC")),
+        self.storage = RedisStorage(
+            context=Context(config=self.cfg, server=get_server("ACME-SEC")),
             shared_client=False,
         )
 
+    @pytest.mark.asyncio
+    async def test_should_throw_an_exception(self):
         try:
-            topic = await storage.exists(IMAGE_URL % 2)
+            topic = await self.storage.exists(IMAGE_URL % 3)
         except Exception as redis_error:
             expect(redis_error).not_to_be_null()
             expect(redis_error).to_be_an_error_like(redis.RedisError)
@@ -132,32 +133,24 @@ class IgnoreErrors(RedisDBContext):
         super().setUp()
 
         self.cfg = Config(
-            REDIS_STORAGE_SERVER_HOST="localhost",
-            REDIS_STORAGE_SERVER_PORT=300,
-            REDIS_STORAGE_SERVER_DB=0,
-            REDIS_STORAGE_SERVER_PASSWORD="nope",
+            REDIS_CLUSTER_STORAGE_STARTUP_INSTANCES="localhost:6390,localhost:6391,localhost:6392",
+            REDIS_STORAGE_MODE="cluster",
             REDIS_STORAGE_IGNORE_ERRORS=True,
         )
-
         self.storage = RedisStorage(
             context=Context(config=self.cfg, server=get_server("ACME-SEC")),
             shared_client=False,
         )
 
-    def test_should_be_instance_of_single_node(self):
-        expect(str(self.storage.get_storage())).to_equal(
-            "Redis<ConnectionPool<Connection<host=localhost,port=300,db=0>>>"
-        )
-
     @pytest.mark.asyncio
     async def test_should_return_false(self):
-        result = await self.storage.exists(IMAGE_URL % 2)
+        result = await self.storage.exists(IMAGE_URL % 3)
         expect(result).to_equal(False)
         expect(result).not_to_be_an_error()
 
     @pytest.mark.asyncio
     async def test_should_return_none(self):
-        result = await self.storage.get(IMAGE_URL % 2)
+        result = await self.storage.get(IMAGE_URL % 3)
         expect(result).to_equal(None)
         expect(result).not_to_be_an_error()
 
@@ -166,17 +159,15 @@ class RaisesIfInvalidConfig(RedisDBContext):
     @pytest.mark.asyncio
     async def test_should_be_an_error(self):
         config = Config(
-            REDIS_STORAGE_SERVER_HOST="localhost",
-            REDIS_STORAGE_SERVER_PORT=6379,
-            REDIS_STORAGE_SERVER_DB=0,
-            REDIS_STORAGE_SERVER_PASSWORD="",
+            REDIS_CLUSTER_STORAGE_STARTUP_INSTANCES="localhost:6390,localhost:6391,localhost:6392",
+            REDIS_STORAGE_MODE="cluster",
             STORES_CRYPTO_KEY_FOR_EACH_IMAGE=True,
         )
         storage = RedisStorage(Context(config=config, server=get_server("")))
-        await storage.put(IMAGE_URL % 3, IMAGE_BYTES)
+        await storage.put(IMAGE_URL % 4, IMAGE_BYTES)
 
         try:
-            await storage.put_crypto(IMAGE_URL % 3)
+            await storage.put_crypto(IMAGE_URL % 4)
         except Exception as error:
             expect(error).to_be_an_error_like(RuntimeError)
             expect(error).to_have_an_error_message_of(
@@ -189,10 +180,8 @@ class GettingCryptoForANewImageReturnsNone(RedisDBContext):
     @pytest.mark.asyncio
     async def test_should_be_null(self):
         config = Config(
-            REDIS_STORAGE_SERVER_HOST="localhost",
-            REDIS_STORAGE_SERVER_PORT=6379,
-            REDIS_STORAGE_SERVER_DB=0,
-            REDIS_STORAGE_SERVER_PASSWORD="",
+            REDIS_CLUSTER_STORAGE_STARTUP_INSTANCES="localhost:6390,localhost:6391,localhost:6392",
+            REDIS_STORAGE_MODE="cluster",
             STORES_CRYPTO_KEY_FOR_EACH_IMAGE=True,
         )
         storage = RedisStorage(Context(config=config, server=get_server("ACME-SEC")))
@@ -214,10 +203,8 @@ class CanStoreCrypto(RedisDBContext):
     def setUp(self):
         super().setUp()
         self.cfg = Config(
-            REDIS_STORAGE_SERVER_HOST="localhost",
-            REDIS_STORAGE_SERVER_PORT=6379,
-            REDIS_STORAGE_SERVER_DB=0,
-            REDIS_STORAGE_SERVER_PASSWORD="",
+            REDIS_CLUSTER_STORAGE_STARTUP_INSTANCES="localhost:6390,localhost:6391,localhost:6392",
+            REDIS_STORAGE_MODE="cluster",
             STORES_CRYPTO_KEY_FOR_EACH_IMAGE=True,
         )
         self.storage = RedisStorage(
@@ -264,39 +251,12 @@ class ReturnsNoneIfNoDetectorData(RedisDBContext):
         expect(topic).to_be_null()
 
 
-class ConnectToRedisWithoutPassword(RedisDBContext):
-    def setUp(self):
-        super().setUp()
-
-        self.cfg = Config(
-            REDIS_STORAGE_SERVER_HOST="localhost",
-            REDIS_STORAGE_SERVER_PORT=6379,
-            REDIS_STORAGE_SERVER_DB=0,
-        )
-
-        self.storage = RedisStorage(
-            context=Context(config=self.cfg, server=get_server("ACME-SEC")),
-            shared_client=False,
-        )
-
-    @pytest.mark.asyncio
-    async def test_should_be_in_catalog(self):
-        await self.storage.put(IMAGE_URL % 1, IMAGE_BYTES)
-
-        topic = self.connection.get(IMAGE_URL % 1)
-
-        expect(topic).not_to_be_null()
-        expect(topic).not_to_be_an_error()
-
-
 class RedisModeInvalid(RedisDBContext):
     def setUp(self):
         super().setUp()
 
         self.cfg = Config(
-            REDIS_STORAGE_SERVER_HOST="localhost",
-            REDIS_STORAGE_SERVER_PORT=6379,
-            REDIS_STORAGE_SERVER_DB=0,
+            REDIS_CLUSTER_STORAGE_STARTUP_INSTANCES="localhost:6390,localhost:6391,localhost:6392",
             REDIS_STORAGE_MODE="test",
         )
         self.ctx = Context(
