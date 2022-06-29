@@ -176,7 +176,7 @@ class RedisBaseStorage:
             redis_mode_var = "REDIS_RESULT_STORAGE_MODE"
 
         raise AttributeError(
-            f"Unknow value for {redis_mode_var} {redis_mode}. See README for more information."
+            f"Unknown value for {redis_mode_var} {redis_mode}. See README for more information."
         )
 
     def get_shared_storage(self):

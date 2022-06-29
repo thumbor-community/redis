@@ -270,5 +270,5 @@ class RedisModeInvalid(RedisDBContext):
             RedisStorage(self.ctx)
 
         expect(str(error.exception)).to_equal(
-            "Unknow value for REDIS_STORAGE_MODE test. See README for more information."
+            "Unknown value for REDIS_STORAGE_MODE test. See README for more information."
         )
