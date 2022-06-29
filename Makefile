@@ -1,6 +1,6 @@
 REDIS_CONTAINER := redis-test redis-sentinel-test redis-cluster-test
 
-test: run-redis unit stop-redis
+test: run-redis wait-healthy-cluster unit stop-redis
 
 unit:
 	@pytest --cov=tc_redis tests/ --asyncio-mode=strict --cov-report term-missing
@@ -17,3 +17,6 @@ run-redis:
 
 stop-redis:
 	@docker-compose stop $(REDIS_CONTAINER)
+
+wait-healthy-cluster:
+	@./tests/fixtures/redis-cluster/wait-healthy-cluster.sh
