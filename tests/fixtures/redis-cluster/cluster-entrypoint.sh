@@ -21,10 +21,6 @@ for port in 6390 6391 6392; do
     cluster_slots_assigned=$(echo "$cluster_info" | grep "cluster_slots_assigned:" | grep -oE '[0-9]+')
     cluster_slots_ok=$(echo "$cluster_info" | grep "cluster_slots_ok:" | grep -oE '[0-9]+')
 
-    echo "$cluster_state"
-    echo "$cluster_size"
-    echo "$cluster_slots_assigned"
-    echo "$cluster_slots_ok"
     if [ "$cluster_state" == "ok" ] && [ "$cluster_size" == "3" ] && [ "$cluster_slots_assigned" == "$cluster_slots_ok" ]; then
       break
     fi
