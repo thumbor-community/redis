@@ -3,7 +3,9 @@
 # Wait until cluster is up
 for port in 6390 6391 6392; do
   while true; do
-    cluster_info=$(redis-cli -h localhost -p $port CLUSTER INFO 2> /dev/null)
+    cluster_info=$(redis-cli -h localhost -p $port CLUSTER INFO 2>&1)
+
+    echo "$cluster_info"
 
     cluster_state=$(echo "$cluster_info" | grep "cluster_state:ok" | grep -o 'ok')
     cluster_size=$(echo "$cluster_info" | grep "cluster_size:" | grep -oE '[0-9]+')
