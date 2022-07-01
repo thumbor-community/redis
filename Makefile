@@ -19,4 +19,4 @@ stop-redis:
 	@docker-compose stop $(REDIS_CONTAINER)
 
 wait-healthy-cluster:
-	@cat ./tests/fixtures/redis-cluster/wait-healthy-cluster.sh | docker exec $$(docker ps | grep redis-cluster | grep -oE "^[0-9a-z]+") /bin/sh
+	@./tests/fixtures/redis-cluster/wait-healthy-cluster-in-container.sh
