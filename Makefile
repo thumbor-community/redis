@@ -19,4 +19,4 @@ stop-redis:
 	@docker-compose stop $(REDIS_CONTAINER)
 
 wait-healthy-cluster:
-	@./tests/fixtures/redis-cluster/wait-healthy-cluster.sh
+	@./tests/fixtures/redis-cluster/wait-healthy-cluster-in-container.sh
