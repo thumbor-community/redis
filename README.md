@@ -26,6 +26,16 @@ REDIS_STORAGE_SERVER_PASSWORD = None
 REDIS_STORAGE_MODE = "single_node"
 ```
 
+###### Cluster
+```python
+STORAGE = "tc_redis.storages.redis_storage"
+
+REDIS_STORAGE_IGNORE_ERRORS = True
+REDIS_CLUSTER_STORAGE_STARTUP_INSTANCES = "localhost:6379,localhost:6380"
+REDIS_STORAGE_SERVER_PASSWORD = None
+REDIS_STORAGE_MODE = "cluster"
+```
+
 ###### Sentinel
 ```python
 STORAGE = "tc_redis.storages.redis_storage"
@@ -51,6 +61,16 @@ REDIS_RESULT_STORAGE_SERVER_HOST = "localhost"
 REDIS_RESULT_STORAGE_SERVER_DB = 0
 REDIS_RESULT_STORAGE_SERVER_PASSWORD = None
 REDIS_RESULT_STORAGE_MODE = "single_node"
+```
+
+###### Cluster
+```python
+RESULT_STORAGE = "tc_redis.result_storages.redis_result_storage"
+
+REDIS_RESULT_STORAGE_IGNORE_ERRORS = True
+REDIS_CLUSTER_RESULT_STORAGE_STARTUP_INSTANCES = "localhost:6379,localhost:6380"
+REDIS_STORAGE_SERVER_PASSWORD = None
+REDIS_RESULT_STORAGE_MODE = "cluster"
 ```
 
 ###### Sentinel

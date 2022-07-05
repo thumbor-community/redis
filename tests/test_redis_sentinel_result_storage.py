@@ -48,7 +48,7 @@ class RedisDBContext(IsolatedAsyncioTestCase):
         )
         self.storage = RedisStorage(self.ctx)
 
-    def test_should_be_instance_of_single_node(self):
+    def test_should_be_instance_of_sentinel(self):
         expect(str(self.storage.get_storage())).to_equal(
             "Redis<SentinelConnectionPool<service=masterinstance(master)>"
         )
@@ -283,7 +283,7 @@ class RedisModeInvalid(RedisDBContext):
             RedisStorage(self.ctx)
 
         expect(str(error.exception)).to_equal(
-            "Unknow value for REDIS_RESULT_STORAGE_MODE test. See README for more information."
+            "Unknown value for REDIS_RESULT_STORAGE_MODE test. See README for more information."
         )
 
 

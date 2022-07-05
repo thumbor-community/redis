@@ -16,3 +16,11 @@ services:
       - 6383:6383
       - 26379:26379
       - 26380:26380
+
+  redis-cluster-test:
+    build:
+      context: ./tests/fixtures/redis-cluster
+    ports:
+      - 6390:6390
+      - 6391:6391
+      - 6392:6392

@@ -11,6 +11,7 @@ from unittest import IsolatedAsyncioTestCase
 from datetime import datetime, timedelta
 
 import redis
+from redis.cluster import RedisCluster, ClusterNode
 import pytest
 from preggy import expect
 from thumbor.context import Context, RequestParameters
@@ -23,12 +24,12 @@ from tests.fixtures.storage_fixtures import IMAGE_URL, IMAGE_BYTES, get_server
 
 class RedisDBContext(IsolatedAsyncioTestCase):
     def setUp(self):
-        self.connection = redis.Redis(port=6379, host="localhost", db=0)
+        self.connection = RedisCluster(
+            startup_nodes=list([ClusterNode("localhost", x) for x in range(6390, 6393)])
+        )
         self.cfg = Config(
-            REDIS_RESULT_STORAGE_SERVER_HOST="localhost",
-            REDIS_RESULT_STORAGE_SERVER_PORT=6379,
-            REDIS_RESULT_STORAGE_SERVER_DB=0,
-            REDIS_RESULT_STORAGE_SERVER_PASSWORD="",
+            REDIS_CLUSTER_RESULT_STORAGE_STARTUP_INSTANCES="localhost:6390,localhost:6391,localhost:6392",
+            REDIS_RESULT_STORAGE_MODE="cluster",
             RESULT_STORAGE_EXPIRATION_SECONDS=60000,
         )
         self.ctx = Context(
@@ -40,16 +41,13 @@ class RedisDBContext(IsolatedAsyncioTestCase):
         )
         self.storage = RedisStorage(self.ctx)
 
-    def test_should_be_instance_of_single_node(self):
-        expect(str(self.storage.get_storage())).to_equal(
-            "Redis<ConnectionPool<Connection<host=localhost,port=6379,db=0>>>"
+    def test_should_be_instance_of_cluster(self):
+        expect(str(self.storage.get_storage().get_nodes())).to_equal(
+            "[[host=127.0.0.1,port=6390,name=127.0.0.1:6390,server_type=primary,redis_connection=Redis<ConnectionPool<Connection<host=127.0.0.1,port=6390,db=0>>>], [host=127.0.0.1,port=6391,name=127.0.0.1:6391,server_type=primary,redis_connection=Redis<ConnectionPool<Connection<host=127.0.0.1,port=6391,db=0>>>], [host=127.0.0.1,port=6392,name=127.0.0.1:6392,server_type=primary,redis_connection=Redis<ConnectionPool<Connection<host=127.0.0.1,port=6392,db=0>>>]]"
         )
 
 
 class CanStoreImage(RedisDBContext):
-    def setUp(self):
-        super().setUp()
-
     @pytest.mark.asyncio
     async def test_should_be_in_catalog(self):
         await self.storage.put(IMAGE_BYTES)
@@ -167,10 +165,8 @@ class CanRaiseErrors(RedisDBContext):
     @pytest.mark.asyncio
     async def test_should_throw_an_exception(self):
         config = Config(
-            REDIS_RESULT_STORAGE_SERVER_HOST="localhost",
-            REDIS_RESULT_STORAGE_SERVER_PORT=300,
-            REDIS_RESULT_STORAGE_SERVER_DB=0,
-            REDIS_RESULT_STORAGE_SERVER_PASSWORD="nope",
+            REDIS_CLUSTER_RESULT_STORAGE_STARTUP_INSTANCES="localhost:6390,localhost:6391,localhost:6392",
+            REDIS_RESULT_STORAGE_MODE="cluster",
             REDIS_RESULT_STORAGE_IGNORE_ERRORS=False,
         )
         ctx = Context(
@@ -196,10 +192,8 @@ class CanIgnoreErrors(RedisDBContext):
     @pytest.mark.asyncio
     async def test_should_not_throw_an_exception(self):
         cfg = Config(
-            REDIS_RESULT_STORAGE_SERVER_HOST="localhost",
-            REDIS_RESULT_STORAGE_SERVER_PORT=300,
-            REDIS_RESULT_STORAGE_SERVER_DB=0,
-            REDIS_RESULT_STORAGE_SERVER_PASSWORD="nope",
+            REDIS_CLUSTER_RESULT_STORAGE_STARTUP_INSTANCES="localhost:6390,localhost:6391,localhost:6392",
+            REDIS_RESULT_STORAGE_MODE="cluster",
             REDIS_RESULT_STORAGE_IGNORE_ERRORS=True,
         )
         ctx = Context(
@@ -219,50 +213,17 @@ class CanIgnoreErrors(RedisDBContext):
         expect(topic).not_to_be_an_error()
 
 
-class ConnectToRedisWithoutPassword(RedisDBContext):
-    def setUp(self):
-        super().setUp()
-
-        self.cfg = Config(
-            REDIS_RESULT_STORAGE_SERVER_HOST="localhost",
-            REDIS_RESULT_STORAGE_SERVER_PORT=6379,
-            REDIS_RESULT_STORAGE_SERVER_DB=0,
-        )
-        self.ctx = Context(
-            config=self.cfg,
-            server=get_server("ACME-SEC"),
-        )
-        self.ctx.request = RequestParameters(
-            url=IMAGE_URL % 2,
-        )
-        self.storage = RedisStorage(self.ctx)
-
-    @pytest.mark.asyncio
-    async def test_should_be_in_catalog(self):
-        await self.storage.put(IMAGE_BYTES)
-
-        topic = self.connection.get(f"result:{IMAGE_URL % 2}")
-
-        expect(topic).not_to_be_null()
-        expect(topic).not_to_be_an_error()
-
-
 class RedisModeInvalid(RedisDBContext):
     def setUp(self):
         super().setUp()
 
         self.cfg = Config(
-            REDIS_RESULT_STORAGE_SERVER_HOST="localhost",
-            REDIS_RESULT_STORAGE_SERVER_PORT=6379,
-            REDIS_RESULT_STORAGE_SERVER_DB=0,
+            REDIS_CLUSTER_RESULT_STORAGE_STARTUP_INSTANCES="localhost:6390,localhost:6391,localhost:6392",
             REDIS_RESULT_STORAGE_MODE="test",
         )
         self.ctx = Context(
             config=self.cfg,
             server=get_server("ACME-SEC"),
-        )
-        self.ctx.request = RequestParameters(
-            url=IMAGE_URL % 2,
         )
 
     @pytest.mark.asyncio
