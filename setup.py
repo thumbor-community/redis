@@ -14,18 +14,18 @@ def read(fname):
 
 
 TESTS_REQUIREMENTS = [
-    "black==22.*,>=22.1.0",
+    "black==23.*,>=23.12.1",
     "preggy==1.*,>=1.4.4",
-    "pyssim==0.*,>=0.4",
-    "pytest==7.*,>=7.0.0",
-    "pytest-cov==3.*,>=3.0.0",
-    "pytest-asyncio==0.*,>=0.18.0",
+    "pyssim==0.*,>=0.7",
+    "pytest==7.*,>=7.4.3",
+    "pytest-cov==4.*,>=4.1.0",
+    "pytest-asyncio==0.*,>=0.23.2",
 ]
 
 RUNTIME_REQUIREMENTS = [
     "redis==5.*,>=5.0.1",
-    "thumbor==7.*,>=7.0.6",
-    "pre-commit==2.*,>=2.17.0",
+    "thumbor==7.*,>=7.7.2",
+    "pre-commit==3.*,>=3.6.0",
 ]
 
 setup(
