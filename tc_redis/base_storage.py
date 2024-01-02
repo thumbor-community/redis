@@ -14,7 +14,6 @@ SENTINEL = "sentinel"
 
 
 class RedisBaseStorage:
-
     single_node_storage = None
     cluster_storage = None
     sentinel_storage = None
@@ -29,7 +28,9 @@ class RedisBaseStorage:
                 "db": self.context.config.get("REDIS_STORAGE_SERVER_DB"),
                 "host": self.context.config.get("REDIS_STORAGE_SERVER_HOST"),
                 "instances": self.context.config.get(
-                    "REDIS_CLUSTER_STORAGE_STARTUP_INSTANCES" if self.context.config.get("REDIS_STORAGE_MODE") == CLUSTER else "REDIS_SENTINEL_STORAGE_INSTANCES"
+                    "REDIS_CLUSTER_STORAGE_STARTUP_INSTANCES"
+                    if self.context.config.get("REDIS_STORAGE_MODE") == CLUSTER
+                    else "REDIS_SENTINEL_STORAGE_INSTANCES"
                 ),
                 "master_instance": self.context.config.get(
                     "REDIS_SENTINEL_STORAGE_MASTER_INSTANCE"
@@ -56,7 +57,9 @@ class RedisBaseStorage:
                 "db": self.context.config.get("REDIS_RESULT_STORAGE_SERVER_DB"),
                 "host": self.context.config.get("REDIS_RESULT_STORAGE_SERVER_HOST"),
                 "instances": self.context.config.get(
-                    "REDIS_CLUSTER_RESULT_STORAGE_STARTUP_INSTANCES" if self.context.config.get("REDIS_RESULT_STORAGE_MODE") == CLUSTER else "REDIS_SENTINEL_RESULT_STORAGE_INSTANCES"
+                    "REDIS_CLUSTER_RESULT_STORAGE_STARTUP_INSTANCES"
+                    if self.context.config.get("REDIS_RESULT_STORAGE_MODE") == CLUSTER
+                    else "REDIS_SENTINEL_RESULT_STORAGE_INSTANCES"
                 ),
                 "master_instance": self.context.config.get(
                     "REDIS_SENTINEL_RESULT_STORAGE_MASTER_INSTANCE"
@@ -138,8 +141,18 @@ class RedisBaseStorage:
         )
 
     def connect_redis_cluster(self):
-        instances_split = [tuple(instance.strip().split(":")) for instance in self.storage_values[self.storage_type]["instances"].split(",")]
-        instances = list(map(lambda x: ClusterNode(x[0], int(x[1] if len(x) == 2 else 6379)), instances_split))
+        instances_split = [
+            tuple(instance.strip().split(":"))
+            for instance in self.storage_values[self.storage_type]["instances"].split(
+                ","
+            )
+        ]
+        instances = list(
+            map(
+                lambda x: ClusterNode(x[0], int(x[1] if len(x) == 2 else 6379)),
+                instances_split,
+            )
+        )
 
         if self.storage_values[self.storage_type]["password"] is None:
             return RedisCluster(
